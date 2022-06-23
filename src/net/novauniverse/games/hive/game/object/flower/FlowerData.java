@@ -49,4 +49,9 @@ public class FlowerData {
 	public boolean isCanBeCollected() {
 		return canBeCollected;
 	}
+	
+	public void collect() {
+		canBeCollected = false;
+	}
+	}
 }
