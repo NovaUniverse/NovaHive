@@ -1,0 +1,6 @@
+name: Hive
+main: net.novauniverse.games.hive.NovaHive
+description: Novauniverse Hive
+version: 1.0
+depend: [NovaCore, NovaCoreGameEngine]
+softdepend: [NovaGamesTarget]
