@@ -53,5 +53,4 @@ public class FlowerData {
 	public void collect() {
 		canBeCollected = false;
 	}
-	}
 }
