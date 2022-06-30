@@ -78,6 +78,7 @@ public class NovaHive extends JavaPlugin implements Listener {
 		ModuleManager.enable(GameLobby.class);
 
 		this.game = new Hive();
+		GameManager.getInstance().loadGame(game);
 
 		GUIMapVote mapSelector = new GUIMapVote();
 

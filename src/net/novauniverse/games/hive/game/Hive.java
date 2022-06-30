@@ -53,6 +53,7 @@ public class Hive extends MapGame implements Listener {
 		super(NovaHive.getInstance());
 
 		this.config = null;
+		
 		this.started = false;
 		this.ended = false;
 
