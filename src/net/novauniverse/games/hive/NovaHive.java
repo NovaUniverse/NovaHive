@@ -13,9 +13,11 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import net.novauniverse.games.hive.game.Hive;
+import net.novauniverse.games.hive.game.config.HiveConfig;
 import net.zeeraa.novacore.commons.log.Log;
 import net.zeeraa.novacore.commons.utils.JSONFileUtils;
 import net.zeeraa.novacore.spigot.gameengine.module.modules.game.GameManager;
+import net.zeeraa.novacore.spigot.gameengine.module.modules.game.map.mapmodule.MapModuleManager;
 import net.zeeraa.novacore.spigot.gameengine.module.modules.game.mapselector.selectors.guivoteselector.GUIMapVote;
 import net.zeeraa.novacore.spigot.gameengine.module.modules.gamelobby.GameLobby;
 import net.zeeraa.novacore.spigot.module.ModuleManager;
@@ -76,6 +78,8 @@ public class NovaHive extends JavaPlugin implements Listener {
 		// Enable required modules
 		ModuleManager.enable(GameManager.class);
 		ModuleManager.enable(GameLobby.class);
+		
+		MapModuleManager.addMapModule("hive.config", HiveConfig.class);
 
 		this.game = new Hive();
 		GameManager.getInstance().loadGame(game);

@@ -22,12 +22,13 @@ public class HiveData {
 	private Location honeyJarLocation;
 	private Location spawnLocation;
 
-	public HiveData(Team owner, int honeyJarHeight, int depositRadius, Location jarCenter, Location spawnLocation) {
+	public HiveData(Team owner, int honeyJarHeight, int honeyJarRadius, int depositRadius, Location jarCenter, Location spawnLocation) {
 		this.owner = owner;
 
 		this.honey = 0;
 		this.honeyJarHeight = honeyJarHeight;
 		this.depositRadius = depositRadius;
+		this.honeyJarRadius = honeyJarRadius;
 
 		this.completed = false;
 
@@ -78,7 +79,6 @@ public class HiveData {
 				return this.isInRange(player);
 			}
 		}
-
 		return false;
 	}
 

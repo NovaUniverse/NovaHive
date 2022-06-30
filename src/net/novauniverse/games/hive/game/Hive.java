@@ -19,6 +19,7 @@ import org.bukkit.inventory.ItemStack;
 
 import net.md_5.bungee.api.ChatColor;
 import net.novauniverse.games.hive.NovaHive;
+import net.novauniverse.games.hive.game.config.ConfiguredHiveData;
 import net.novauniverse.games.hive.game.config.HiveConfig;
 import net.novauniverse.games.hive.game.object.flower.FlowerData;
 import net.novauniverse.games.hive.game.object.hive.HiveData;
@@ -28,6 +29,7 @@ import net.zeeraa.novacore.spigot.gameengine.module.modules.game.GameEndReason;
 import net.zeeraa.novacore.spigot.gameengine.module.modules.game.MapGame;
 import net.zeeraa.novacore.spigot.gameengine.module.modules.game.elimination.PlayerQuitEliminationAction;
 import net.zeeraa.novacore.spigot.tasks.SimpleTask;
+import net.zeeraa.novacore.spigot.teams.TeamManager;
 import net.zeeraa.novacore.spigot.utils.ItemBuilder;
 import net.zeeraa.novacore.spigot.utils.PlayerUtils;
 
@@ -53,7 +55,7 @@ public class Hive extends MapGame implements Listener {
 		super(NovaHive.getInstance());
 
 		this.config = null;
-		
+
 		this.started = false;
 		this.ended = false;
 
@@ -177,6 +179,17 @@ public class Hive extends MapGame implements Listener {
 		}
 		this.config = cfg;
 
+		List<ConfiguredHiveData> cfgHive = new ArrayList<>(config.getHives());
+		TeamManager.getTeamManager().getTeams().forEach(team -> {
+			if (cfgHive.size() > 0) {
+				ConfiguredHiveData h = cfgHive.remove(0);
+				HiveData hive = h.toHiveData(team, getWorld());
+				hives.add(hive);
+			} else {
+				Log.warn("Hive", "Not enough hives configured for team " + team.getDisplayName());
+			}
+		});
+
 		timeLeft = config.getGameTime();
 
 		Bukkit.getServer().getOnlinePlayers().forEach(player -> spawnPlayer(player));
@@ -200,14 +213,14 @@ public class Hive extends MapGame implements Listener {
 		}
 
 		player.teleport(playerHive.getSpawnLocation());
-		
+
 		player.setGameMode(GameMode.ADVENTURE);
 		player.setAllowFlight(true);
 		player.setFlying(true);
-		
+
 		player.setFoodLevel(20);
 		player.setSaturation(20);
-		
+
 		PlayerUtils.resetMaxHealth(player);
 		PlayerUtils.clearPlayerInventory(player);
 		PlayerUtils.clearPotionEffects(player);
