@@ -319,8 +319,7 @@ public class Hive extends MapGame implements Listener {
 
 		ItemBuilder compassBuilder = new ItemBuilder(Material.COMPASS);
 		compassBuilder.setName(ChatColor.GREEN + "Hive tracker");
-		compassBuilder.addLore(ChatColor.GREEN + "Use this to find");
-		compassBuilder.addLore(ChatColor.GREEN + "your hive");
+		compassBuilder.addLore(ChatColor.GREEN + "Use this to find your hive");
 		compassBuilder.setAmount(1);
 
 		player.getInventory().setItem(Hive.COLLECTOR_BOTTLE_SLOT, collectorBuilder.build());
