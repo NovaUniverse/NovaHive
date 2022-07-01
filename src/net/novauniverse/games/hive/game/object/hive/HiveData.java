@@ -1,8 +1,12 @@
 package net.novauniverse.games.hive.game.object.hive;
 
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
+import org.bukkit.boss.BarColor;
+import org.bukkit.boss.BarStyle;
+import org.bukkit.boss.BossBar;
 import org.bukkit.entity.Player;
 
 import net.novauniverse.games.hive.NovaHive;
@@ -22,6 +26,8 @@ public class HiveData {
 	private Location honeyJarLocation;
 	private Location spawnLocation;
 
+	private BossBar bossBar;
+
 	public HiveData(Team owner, int honeyJarHeight, int honeyJarRadius, int depositRadius, Location jarCenter, Location spawnLocation) {
 		this.owner = owner;
 
@@ -34,6 +40,8 @@ public class HiveData {
 
 		this.spawnLocation = spawnLocation;
 		this.honeyJarLocation = jarCenter;
+
+		this.bossBar = Bukkit.createBossBar("0 / " + NovaHive.getInstance().getGame().getConfig().getHoneyRequiredtoFillJar(), BarColor.GREEN, BarStyle.SOLID);
 	}
 
 	public int getHoney() {
@@ -72,6 +80,10 @@ public class HiveData {
 		this.completed = completed;
 	}
 
+	public BossBar getBossBar() {
+		return bossBar;
+	}
+
 	public boolean canDeposit(Player player) {
 		Team team = TeamManager.getTeamManager().getPlayerTeam(player);
 		if (team != null) {
@@ -91,8 +103,26 @@ public class HiveData {
 		return false;
 	}
 
-	public void updateJar() {
-		double perStep = (double) NovaHive.getInstance().getGame().getConfig().getHoneyRequiredtoFillJar() / (double) honeyJarHeight;
+	public void updateBossBarPlayers() {
+		bossBar.removeAll();
+		Bukkit.getServer().getOnlinePlayers().forEach(player -> {
+			Team team = TeamManager.getTeamManager().getPlayerTeam(player);
+			if (team == null) {
+				if (team.equals(this.owner)) {
+					bossBar.addPlayer(player);
+				}
+			}
+		});
+	}
+
+	public void update() {
+		double toFill = (double) NovaHive.getInstance().getGame().getConfig().getHoneyRequiredtoFillJar();
+
+		double progress = ((double) honey) / toFill;
+
+		bossBar.setProgress(progress);
+
+		double perStep = toFill / (double) honeyJarHeight;
 		int blocksFilled = (int) Math.floor(honey / perStep);
 
 		for (int x = -1; x <= 1; x++) {

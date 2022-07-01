@@ -246,13 +246,14 @@ public class Hive extends MapGame implements Listener {
 
 		timeLeft = config.getGameTime();
 
-		Bukkit.getServer().getOnlinePlayers().forEach(player -> spawnPlayer(player));
-
 		Bukkit.getServer().getOnlinePlayers().forEach(player -> {
 			if (!hasPlayerData(player)) {
 				playerData.add(new HivePlayerData(player));
 			}
+			spawnPlayer(player);
 		});
+
+		hives.forEach(hive -> hive.updateBossBarPlayers());
 
 		Task.tryStartTask(timer);
 		Task.tryStartTask(checkTask);
@@ -370,6 +371,8 @@ public class Hive extends MapGame implements Listener {
 	@EventHandler(priority = EventPriority.NORMAL)
 	public void onPlayerJoin(PlayerJoinEvent e) {
 		playerData.add(new HivePlayerData(e.getPlayer()));
+
+		hives.forEach(hive -> hive.updateBossBarPlayers());
 	}
 
 	@EventHandler(priority = EventPriority.NORMAL)
@@ -413,7 +416,7 @@ public class Hive extends MapGame implements Listener {
 								hive.getOwner().sendMessage(org.bukkit.ChatColor.GREEN + player.getName() + " deposited " + amount + " bottle" + (amount == 1 ? "" : "s") + " of honey");
 
 								hive.addHoney(amount);
-								hive.updateJar();
+								hive.update();
 							}
 						}
 					} else if (e.getItem().getType() == Material.GLASS_BOTTLE) {
