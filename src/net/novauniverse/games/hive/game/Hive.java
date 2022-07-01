@@ -14,12 +14,16 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.entity.EntityRegainHealthEvent;
+import org.bukkit.event.entity.EntityRegainHealthEvent.RegainReason;
 import org.bukkit.event.inventory.InventoryInteractEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 
 import net.md_5.bungee.api.ChatColor;
 import net.novauniverse.games.hive.NovaHive;
@@ -60,6 +64,8 @@ public class Hive extends MapGame implements Listener {
 
 	private Task collectorTask;
 	private Task particleTask;
+	
+	private Task regenTask;
 
 	private List<HiveData> hives;
 	private List<FlowerData> flowers;
@@ -158,6 +164,21 @@ public class Hive extends MapGame implements Listener {
 				});
 			}
 		}, 5L);
+		
+		this.regenTask = new SimpleTask(getPlugin(), new Runnable() {
+			@Override
+			public void run() {
+				hives.forEach(hive -> {
+					hive.getOwner().getOnlinePlayers().forEach(player -> {
+						if(player.getWorld() == getWorld()) {
+							if(player.getLocation().distance(hive.getHoneyJarLocation()) <= hive.getDepositRadius()) {
+								player.addPotionEffect(new PotionEffect(PotionEffectType.REGENERATION, 60, 0, false, false, false));
+							}
+						}
+					});
+				});
+			}
+		}, 10L);
 	}
 
 	public HiveConfig getConfig() {
@@ -259,6 +280,7 @@ public class Hive extends MapGame implements Listener {
 		Task.tryStartTask(checkTask);
 		Task.tryStartTask(collectorTask);
 		Task.tryStartTask(particleTask);
+		Task.tryStartTask(regenTask);
 
 		started = true;
 
@@ -317,6 +339,7 @@ public class Hive extends MapGame implements Listener {
 		Task.tryStopTask(checkTask);
 		Task.tryStopTask(collectorTask);
 		Task.tryStopTask(particleTask);
+		Task.tryStopTask(regenTask);
 
 		ended = true;
 	}
@@ -366,6 +389,15 @@ public class Hive extends MapGame implements Listener {
 
 	private boolean hasPlayerData(Player player) {
 		return playerData.stream().filter(pd -> pd.getPlayer() == player).count() > 0;
+	}
+	
+	@EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
+	public void onEntityRegen(EntityRegainHealthEvent e) {
+		if(e.getEntity() instanceof Player) {
+			if(e.getRegainReason() == RegainReason.REGEN || e.getRegainReason() == RegainReason.SATIATED) {
+				e.setCancelled(true);
+			}
+		}
 	}
 
 	@EventHandler(priority = EventPriority.NORMAL)
