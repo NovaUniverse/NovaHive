@@ -1,6 +1,7 @@
 package net.novauniverse.games.hive.game.object.hive;
 
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -10,6 +11,7 @@ import org.bukkit.boss.BossBar;
 import org.bukkit.entity.Player;
 
 import net.novauniverse.games.hive.NovaHive;
+import net.zeeraa.novacore.commons.log.Log;
 import net.zeeraa.novacore.spigot.teams.Team;
 import net.zeeraa.novacore.spigot.teams.TeamManager;
 
@@ -41,7 +43,7 @@ public class HiveData {
 		this.spawnLocation = spawnLocation;
 		this.honeyJarLocation = jarCenter;
 
-		this.bossBar = Bukkit.createBossBar("0 / " + NovaHive.getInstance().getGame().getConfig().getHoneyRequiredtoFillJar(), BarColor.GREEN, BarStyle.SOLID);
+		this.bossBar = Bukkit.createBossBar(getBarText(), BarColor.GREEN, BarStyle.SOLID);
 	}
 
 	public int getHoney() {
@@ -115,15 +117,22 @@ public class HiveData {
 		});
 	}
 
+	private String getBarText() {
+		return ChatColor.GOLD + "" + honey + " / " + NovaHive.getInstance().getGame().getConfig().getHoneyRequiredtoFillJar() + " stashed honey";
+	}
+
 	public void update() {
 		double toFill = (double) NovaHive.getInstance().getGame().getConfig().getHoneyRequiredtoFillJar();
 
 		double progress = ((double) honey) / toFill;
 
 		bossBar.setProgress(progress);
+		bossBar.setTitle(getBarText());
 
 		double perStep = toFill / (double) honeyJarHeight;
 		int blocksFilled = (int) Math.floor(honey / perStep);
+
+		Log.trace("HiveData", "honey: " + honey + "toFill: " + toFill + " jarHeight: " + honeyJarHeight + " perStep: " + perStep + " blocksFilled: " + blocksFilled);
 
 		for (int x = -1; x <= 1; x++) {
 			for (int z = -1; z <= 1; z++) {

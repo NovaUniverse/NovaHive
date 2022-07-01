@@ -8,6 +8,7 @@ import org.bukkit.boss.BossBar;
 import org.bukkit.entity.Player;
 
 import net.novauniverse.games.hive.game.Hive;
+import net.zeeraa.novacore.commons.log.Log;
 
 public class HivePlayerData {
 	private Player player;
@@ -23,6 +24,7 @@ public class HivePlayerData {
 
 		this.bossBar = Bukkit.createBossBar(ChatColor.GREEN + "Collecting honey", BarColor.BLUE, BarStyle.SEGMENTED_10);
 		this.bossBar.addPlayer(player);
+		this.bossBar.setVisible(false);
 	}
 
 	public Player getPlayer() {
@@ -42,7 +44,7 @@ public class HivePlayerData {
 	}
 
 	public void updateBossBar() {
-		bossBar.setProgress(collectionTimeLeft / Hive.COLLECTION_TIME);
+		bossBar.setProgress((double) collectionTimeLeft / (double) Hive.COLLECTION_TIME);
 	}
 
 	public void setCollecting(boolean collecting) {

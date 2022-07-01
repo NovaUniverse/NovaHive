@@ -7,6 +7,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import net.zeeraa.novacore.spigot.gameengine.module.modules.game.map.mapmodule.MapModule;
+import net.zeeraa.novacore.spigot.utils.XYZLocation;
 
 public class HiveConfig extends MapModule {
 	private int gameTime;
@@ -15,6 +16,7 @@ public class HiveConfig extends MapModule {
 	private int flowerRecoveryTime;
 
 	private List<ConfiguredHiveData> hives;
+	private List<XYZLocation> flowers;
 
 	public HiveConfig(JSONObject json) {
 		super(json);
@@ -29,6 +31,12 @@ public class HiveConfig extends MapModule {
 		JSONArray hivesJson = json.getJSONArray("hives");
 		for (int i = 0; i < hivesJson.length(); i++) {
 			hives.add(new ConfiguredHiveData(hivesJson.getJSONObject(i)));
+		}
+
+		flowers = new ArrayList<>();
+		JSONArray flowersArray = json.getJSONArray("flowers");
+		for (int i = 0; i < flowersArray.length(); i++) {
+			flowers.add(XYZLocation.fromJSON(flowersArray.getJSONObject(i)));
 		}
 	}
 
@@ -50,5 +58,9 @@ public class HiveConfig extends MapModule {
 
 	public List<ConfiguredHiveData> getHives() {
 		return hives;
+	}
+	
+	public List<XYZLocation> getFlowers() {
+		return flowers;
 	}
 }

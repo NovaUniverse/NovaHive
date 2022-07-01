@@ -50,6 +50,8 @@ public class Hive extends MapGame implements Listener {
 	public static final int COMPASS_SLOT = 1;
 	public static final int HONEY_SLOT = 8;
 
+	public static final int COLLECTION_RADIUS = 6;
+
 	public static final int COLLECTION_TIME = 10; // 2 = 1 second
 
 	private boolean started;
@@ -64,7 +66,7 @@ public class Hive extends MapGame implements Listener {
 
 	private Task collectorTask;
 	private Task particleTask;
-	
+
 	private Task regenTask;
 
 	private List<HiveData> hives;
@@ -147,7 +149,7 @@ public class Hive extends MapGame implements Listener {
 							} else {
 								playerData.setCollecting(false);
 								playerData.resetCollectionTime();
-								playerData.getPlayer().sendMessage(org.bukkit.ChatColor.RED + "Failed to collect honey since you are not in range of any flowers ready to be collected");
+								playerData.getPlayer().sendMessage(org.bukkit.ChatColor.RED + "You are not in range of a flower with pollen");
 							}
 						}
 					}
@@ -164,14 +166,14 @@ public class Hive extends MapGame implements Listener {
 				});
 			}
 		}, 5L);
-		
+
 		this.regenTask = new SimpleTask(getPlugin(), new Runnable() {
 			@Override
 			public void run() {
 				hives.forEach(hive -> {
 					hive.getOwner().getOnlinePlayers().forEach(player -> {
-						if(player.getWorld() == getWorld()) {
-							if(player.getLocation().distance(hive.getHoneyJarLocation()) <= hive.getDepositRadius()) {
+						if (player.getWorld() == getWorld()) {
+							if (player.getLocation().distance(hive.getHoneyJarLocation()) <= hive.getDepositRadius()) {
 								player.addPotionEffect(new PotionEffect(PotionEffectType.REGENERATION, 60, 0, false, false, false));
 							}
 						}
@@ -276,6 +278,8 @@ public class Hive extends MapGame implements Listener {
 
 		hives.forEach(hive -> hive.updateBossBarPlayers());
 
+		config.getFlowers().forEach(loc -> this.flowers.add(new FlowerData(loc.toBukkitLocation(getWorld()), COLLECTION_RADIUS)));
+
 		Task.tryStartTask(timer);
 		Task.tryStartTask(checkTask);
 		Task.tryStartTask(collectorTask);
@@ -364,10 +368,13 @@ public class Hive extends MapGame implements Listener {
 		}
 
 		if (amount == 0) {
-			ItemBuilder builder = new ItemBuilder(Material.GLASS_BOTTLE);
-			builder.setName(ChatColor.RED + "0 Honey");
-			builder.addLore(ChatColor.RED + "Cant deposit");
-			player.getInventory().setItem(Hive.HONEY_SLOT, builder.build());
+			/*
+			 * ItemBuilder builder = new ItemBuilder(Material.GLASS_BOTTLE);
+			 * builder.setName(ChatColor.RED + "0 Honey"); builder.addLore(ChatColor.RED +
+			 * "Cant deposit"); player.getInventory().setItem(Hive.HONEY_SLOT,
+			 * builder.build());
+			 */
+			player.getInventory().setItem(HONEY_SLOT, ItemBuilder.AIR);
 		} else {
 			int max = getConfig().getMaxHoneyInInventory();
 			if (amount > max) {
@@ -375,6 +382,7 @@ public class Hive extends MapGame implements Listener {
 			}
 
 			ItemBuilder builder = new ItemBuilder(Material.HONEY_BOTTLE);
+			builder.setAmount(amount);
 			builder.setName(ChatColor.GOLD + "" + amount + " Honey");
 			builder.addLore(ChatColor.GOLD + "Go to your hive and");
 			builder.addLore(ChatColor.GOLD + "right click to deposit");
@@ -389,11 +397,11 @@ public class Hive extends MapGame implements Listener {
 	private boolean hasPlayerData(Player player) {
 		return playerData.stream().filter(pd -> pd.getPlayer() == player).count() > 0;
 	}
-	
+
 	@EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
 	public void onEntityRegen(EntityRegainHealthEvent e) {
-		if(e.getEntity() instanceof Player) {
-			if(e.getRegainReason() == RegainReason.REGEN || e.getRegainReason() == RegainReason.SATIATED) {
+		if (e.getEntity() instanceof Player) {
+			if (e.getRegainReason() == RegainReason.REGEN || e.getRegainReason() == RegainReason.SATIATED) {
 				e.setCancelled(true);
 			}
 		}
@@ -456,6 +464,8 @@ public class Hive extends MapGame implements Listener {
 							if (flowers.stream().filter(flower -> flower.canCollect(player)).count() > 0) {
 								playerData.resetCollectionTime();
 								playerData.setCollecting(true);
+							} else {
+								player.sendMessage(org.bukkit.ChatColor.RED + "You are not in range of a flower with pollen");
 							}
 						}
 					}
