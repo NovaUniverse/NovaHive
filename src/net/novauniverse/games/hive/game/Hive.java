@@ -395,7 +395,7 @@ public class Hive extends MapGame implements Listener {
 
 	@EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = false)
 	public void onPlayerInteract(PlayerInteractEvent e) {
-		if (e.getHand() == EquipmentSlot.HEAD) {
+		if (e.getHand() == EquipmentSlot.HAND) {
 			if (e.getAction() == Action.RIGHT_CLICK_AIR || e.getAction() == Action.RIGHT_CLICK_BLOCK) {
 				Player player = e.getPlayer();
 				if (getPlayers().contains(player.getUniqueId())) {
