@@ -414,6 +414,15 @@ public class Hive extends MapGame implements Listener {
 								hive.updateJar();
 							}
 						}
+					} else if (e.getItem().getType() == Material.GLASS_BOTTLE) {
+						HivePlayerData playerData = getPlayerData(player);
+						if (!playerData.isCollecting()) {
+							if (flowers.stream().filter(flower -> flower.canCollect(player)).count() > 0) {
+								playerData.resetCollectionTime();
+								playerData.setCollecting(true);
+								player.sendMessage(ChatColor.GREEN + "Collecting honey. Do not move away from the flower");
+							}
+						}
 					}
 				}
 			}
