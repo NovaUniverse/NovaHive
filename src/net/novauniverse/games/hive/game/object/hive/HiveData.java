@@ -107,7 +107,7 @@ public class HiveData {
 		bossBar.removeAll();
 		Bukkit.getServer().getOnlinePlayers().forEach(player -> {
 			Team team = TeamManager.getTeamManager().getPlayerTeam(player);
-			if (team == null) {
+			if (team != null) {
 				if (team.equals(this.owner)) {
 					bossBar.addPlayer(player);
 				}
