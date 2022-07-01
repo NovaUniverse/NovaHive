@@ -31,6 +31,7 @@ import net.novauniverse.games.hive.game.object.hive.HivePlayerData;
 import net.novauniverse.games.hive.game.object.misc.PlayerFlowerDistanceComparator;
 import net.zeeraa.novacore.commons.log.Log;
 import net.zeeraa.novacore.commons.tasks.Task;
+import net.zeeraa.novacore.spigot.abstraction.enums.VersionIndependentSound;
 import net.zeeraa.novacore.spigot.gameengine.module.modules.game.GameEndReason;
 import net.zeeraa.novacore.spigot.gameengine.module.modules.game.MapGame;
 import net.zeeraa.novacore.spigot.gameengine.module.modules.game.elimination.PlayerQuitEliminationAction;
@@ -134,6 +135,7 @@ public class Hive extends MapGame implements Listener {
 										addPlayerHoney(playerData.getPlayer(), 1);
 										playerData.setCollecting(false);
 										playerData.resetCollectionTime();
+										VersionIndependentSound.ITEM_PICKUP.play(playerData.getPlayer());
 									}
 								}
 							} else {
@@ -420,7 +422,6 @@ public class Hive extends MapGame implements Listener {
 							if (flowers.stream().filter(flower -> flower.canCollect(player)).count() > 0) {
 								playerData.resetCollectionTime();
 								playerData.setCollecting(true);
-								player.sendMessage(ChatColor.GREEN + "Collecting honey. Do not move away from the flower");
 							}
 						}
 					}
