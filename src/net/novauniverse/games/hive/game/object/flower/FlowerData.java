@@ -1,6 +1,7 @@
 package net.novauniverse.games.hive.game.object.flower;
 
 import org.bukkit.Location;
+import org.bukkit.entity.Player;
 
 import net.novauniverse.games.hive.NovaHive;
 
@@ -46,11 +47,20 @@ public class FlowerData {
 		return recoveryTimer;
 	}
 
-	public boolean isCanBeCollected() {
+	public boolean canBeCollected() {
 		return canBeCollected;
 	}
-	
+
 	public void collect() {
 		canBeCollected = false;
+	}
+
+	public boolean canCollect(Player player) {
+		if (canBeCollected) {
+			if (getLocation().distance(player.getLocation()) <= collectionRadius) {
+				return true;
+			}
+		}
+		return false;
 	}
 }

@@ -1,10 +1,12 @@
 package net.novauniverse.games.hive.game;
 
+import java.awt.Color;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -14,6 +16,8 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.inventory.InventoryInteractEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 
@@ -23,6 +27,7 @@ import net.novauniverse.games.hive.game.config.ConfiguredHiveData;
 import net.novauniverse.games.hive.game.config.HiveConfig;
 import net.novauniverse.games.hive.game.object.flower.FlowerData;
 import net.novauniverse.games.hive.game.object.hive.HiveData;
+import net.novauniverse.games.hive.game.object.hive.HivePlayerData;
 import net.zeeraa.novacore.commons.log.Log;
 import net.zeeraa.novacore.commons.tasks.Task;
 import net.zeeraa.novacore.spigot.gameengine.module.modules.game.GameEndReason;
@@ -32,11 +37,14 @@ import net.zeeraa.novacore.spigot.tasks.SimpleTask;
 import net.zeeraa.novacore.spigot.teams.TeamManager;
 import net.zeeraa.novacore.spigot.utils.ItemBuilder;
 import net.zeeraa.novacore.spigot.utils.PlayerUtils;
+import xyz.xenondevs.particle.ParticleEffect;
 
 public class Hive extends MapGame implements Listener {
 	public static final int COLLECTOR_BOTTLE_SLOT = 0;
 	public static final int COMPASS_SLOT = 1;
 	public static final int HONEY_SLOT = 8;
+
+	public static final int COLLECTION_TIME = 10; // 2 = 1 second
 
 	private boolean started;
 	private boolean ended;
@@ -48,8 +56,12 @@ public class Hive extends MapGame implements Listener {
 	private Task timer;
 	private Task checkTask;
 
+	private Task collectorTask;
+	private Task particleTask;
+
 	private List<HiveData> hives;
 	private List<FlowerData> flowers;
+	private List<HivePlayerData> playerData;
 
 	public Hive() {
 		super(NovaHive.getInstance());
@@ -61,6 +73,7 @@ public class Hive extends MapGame implements Listener {
 
 		this.hives = new ArrayList<HiveData>();
 		this.flowers = new ArrayList<FlowerData>();
+		this.playerData = new ArrayList<>();
 
 		this.timeLeft = 0;
 		this.timer = new SimpleTask(getPlugin(), new Runnable() {
@@ -102,6 +115,38 @@ public class Hive extends MapGame implements Listener {
 						});
 					});
 				}
+			}
+		}, 5L);
+
+		this.collectorTask = new SimpleTask(getPlugin(), new Runnable() {
+			@Override
+			public void run() {
+				playerData.forEach(playerData -> {
+					if (playerData.getPlayer().getWorld() == getWorld()) {
+						if (playerData.isCollecting()) {
+							if (flowers.stream().filter(flower -> flower.canCollect(playerData.getPlayer())).count() > 0) {
+								int timeLeft = playerData.decrementCollectionTimer();
+								if (timeLeft <= 0) {
+
+								}
+							} else {
+								playerData.setCollecting(false);
+								playerData.resetCollectionTime();
+								playerData.getPlayer().sendMessage(org.bukkit.ChatColor.RED + "Failed to collect honey since you are not in range of any flowers ready to be collected");
+							}
+						}
+					}
+				});
+			}
+		}, 10L);
+
+		this.particleTask = new SimpleTask(getPlugin(), new Runnable() {
+			@Override
+			public void run() {
+				flowers.stream().filter(flower -> flower.canBeCollected()).forEach(flower -> {
+					Location location = flower.getLocation().clone().add(0, 1, 0);
+					ParticleEffect.REDSTONE.display(location, Color.YELLOW);
+				});
 			}
 		}, 5L);
 	}
@@ -194,8 +239,16 @@ public class Hive extends MapGame implements Listener {
 
 		Bukkit.getServer().getOnlinePlayers().forEach(player -> spawnPlayer(player));
 
+		Bukkit.getServer().getOnlinePlayers().forEach(player -> {
+			if (!hasPlayerData(player)) {
+				playerData.add(new HivePlayerData(player));
+			}
+		});
+
 		Task.tryStartTask(timer);
 		Task.tryStartTask(checkTask);
+		Task.tryStartTask(collectorTask);
+		Task.tryStartTask(particleTask);
 
 		started = true;
 
@@ -252,6 +305,8 @@ public class Hive extends MapGame implements Listener {
 
 		Task.tryStopTask(timer);
 		Task.tryStopTask(checkTask);
+		Task.tryStopTask(collectorTask);
+		Task.tryStopTask(particleTask);
 
 		ended = true;
 	}
@@ -293,6 +348,24 @@ public class Hive extends MapGame implements Listener {
 			builder.addLore(ChatColor.GOLD + "right click to deposit");
 			player.getInventory().setItem(Hive.HONEY_SLOT, builder.build());
 		}
+	}
+
+	public HivePlayerData getPlayerData(Player player) {
+		return playerData.stream().filter(pd -> pd.getPlayer() == player).findFirst().get();
+	}
+
+	private boolean hasPlayerData(Player player) {
+		return playerData.stream().filter(pd -> pd.getPlayer() == player).count() > 0;
+	}
+
+	@EventHandler(priority = EventPriority.NORMAL)
+	public void onPlayerJoin(PlayerJoinEvent e) {
+		playerData.add(new HivePlayerData(e.getPlayer()));
+	}
+
+	@EventHandler(priority = EventPriority.NORMAL)
+	public void onPlayerQuit(PlayerQuitEvent e) {
+		playerData.removeIf(pd -> pd.getPlayer() == e.getPlayer());
 	}
 
 	@EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
