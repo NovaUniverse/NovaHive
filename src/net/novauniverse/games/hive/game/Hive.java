@@ -28,6 +28,7 @@ import net.novauniverse.games.hive.game.config.HiveConfig;
 import net.novauniverse.games.hive.game.object.flower.FlowerData;
 import net.novauniverse.games.hive.game.object.hive.HiveData;
 import net.novauniverse.games.hive.game.object.hive.HivePlayerData;
+import net.novauniverse.games.hive.game.object.misc.PlayerFlowerDistanceComparator;
 import net.zeeraa.novacore.commons.log.Log;
 import net.zeeraa.novacore.commons.tasks.Task;
 import net.zeeraa.novacore.spigot.gameengine.module.modules.game.GameEndReason;
@@ -127,7 +128,13 @@ public class Hive extends MapGame implements Listener {
 							if (flowers.stream().filter(flower -> flower.canCollect(playerData.getPlayer())).count() > 0) {
 								int timeLeft = playerData.decrementCollectionTimer();
 								if (timeLeft <= 0) {
-
+									FlowerData closest = flowers.stream().filter(flower -> flower.canCollect(playerData.getPlayer())).sorted(new PlayerFlowerDistanceComparator(playerData.getPlayer())).findFirst().orElse(null);
+									if (closest != null) {
+										closest.collect();
+										addPlayerHoney(playerData.getPlayer(), 1);
+										playerData.setCollecting(false);
+										playerData.resetCollectionTime();
+									}
 								}
 							} else {
 								playerData.setCollecting(false);
