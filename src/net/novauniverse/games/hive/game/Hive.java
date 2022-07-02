@@ -17,6 +17,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityRegainHealthEvent;
 import org.bukkit.event.entity.EntityRegainHealthEvent.RegainReason;
+import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryInteractEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
@@ -427,7 +428,7 @@ public class Hive extends MapGame implements Listener {
 	}
 
 	@EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
-	public void onInventoryInteract(InventoryInteractEvent e) {
+	public void onInventoryClick(InventoryClickEvent e) {
 		if (started && !ended) {
 			if (e.getWhoClicked() instanceof Player) {
 				Player player = (Player) e.getWhoClicked();
