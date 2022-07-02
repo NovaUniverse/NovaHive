@@ -459,7 +459,7 @@ public class Hive extends MapGame implements Listener {
 							if (amount > 0) {
 								this.setPlayerHoney(player, 0);
 
-								hive.getOwner().sendMessage(org.bukkit.ChatColor.GREEN + player.getName() + " deposited " + amount + " bottle" + (amount == 1 ? "" : "s") + " of honey");
+								hive.getOwner().sendMessage(ChatColor.GREEN + player.getName() + " deposited " + amount + " bottle" + (amount == 1 ? "" : "s") + " of honey");
 
 								hive.addHoney(amount);
 								hive.update();
@@ -468,20 +468,20 @@ public class Hive extends MapGame implements Listener {
 					} else if (e.getItem().getType() == Material.GLASS_BOTTLE) {
 						HivePlayerData playerData = getPlayerData(player);
 						if (!playerData.isCollecting()) {
-							if(getPlayerHoney(player) >= config.getMaxHoneyInInventory()) {
+							if (getPlayerHoney(player) >= config.getMaxHoneyInInventory()) {
 								player.sendMessage(ChatColor.RED + "You cant hold any more honey in your inventory. Find your hive and deposit the honey before you can collect more");
 							} else {
-							if (flowers.stream().filter(flower -> flower.canCollect(player)).count() > 0) {
-								if (!player.isFlying()) {
-									playerData.resetCollectionTime();
-									playerData.setCollecting(true);
-								} else {
-									player.sendMessage(ChatColor.RED + "You need to land before collecting honey");
-								}
+								if (flowers.stream().filter(flower -> flower.canCollect(player)).count() > 0) {
+									if (!player.isFlying()) {
+										playerData.resetCollectionTime();
+										playerData.setCollecting(true);
+									} else {
+										player.sendMessage(ChatColor.RED + "You need to land before collecting honey");
+									}
 
-							} else {
-								player.sendMessage(ChatColor.RED + "You are not in range of a flower with pollen");
-							}
+								} else {
+									player.sendMessage(ChatColor.RED + "You are not in range of a flower with pollen");
+								}
 							}
 						}
 					}
