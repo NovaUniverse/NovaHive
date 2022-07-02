@@ -11,7 +11,6 @@ import org.bukkit.boss.BossBar;
 import org.bukkit.entity.Player;
 
 import net.novauniverse.games.hive.NovaHive;
-import net.zeeraa.novacore.commons.log.Log;
 import net.zeeraa.novacore.spigot.teams.Team;
 import net.zeeraa.novacore.spigot.teams.TeamManager;
 
@@ -44,6 +43,7 @@ public class HiveData {
 		this.honeyJarLocation = jarCenter;
 
 		this.bossBar = Bukkit.createBossBar(getBarText(), BarColor.GREEN, BarStyle.SOLID);
+		this.bossBar.setProgress(0);
 	}
 
 	public int getHoney() {
@@ -98,7 +98,7 @@ public class HiveData {
 
 	public boolean isInRange(Player player) {
 		if (player.getLocation().getWorld() == honeyJarLocation.getWorld()) {
-			if (player.getLocation().distance(honeyJarLocation) <= depositRadius) {
+			if (player.getLocation().distance(honeyJarLocation.clone().add(0, honeyJarHeight / 2, 0)) <= depositRadius) {
 				return true;
 			}
 		}
@@ -130,15 +130,15 @@ public class HiveData {
 		bossBar.setTitle(getBarText());
 
 		double perStep = toFill / (double) honeyJarHeight;
-		int blocksFilled = (int) Math.floor(honey / perStep);
+		int blocksFilled = (int) Math.ceil(honey / perStep);
 
-		Log.trace("HiveData", "honey: " + honey + "toFill: " + toFill + " jarHeight: " + honeyJarHeight + " perStep: " + perStep + " blocksFilled: " + blocksFilled);
+		//Log.trace("HiveData", "honey: " + honey + " toFill: " + toFill + " jarHeight: " + honeyJarHeight + " perStep: " + perStep + " blocksFilled: " + blocksFilled);
 
 		for (int x = -1; x <= 1; x++) {
 			for (int z = -1; z <= 1; z++) {
 				for (int i = 0; i < honeyJarHeight; i++) {
 					Location location = honeyJarLocation.clone().add(x, i, z);
-					boolean reached = (i + 1) < blocksFilled;
+					boolean reached = (i + 1) <= blocksFilled;
 
 					Block block = location.getBlock();
 					if (reached) {
