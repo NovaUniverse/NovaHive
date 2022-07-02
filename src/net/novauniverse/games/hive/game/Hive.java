@@ -18,7 +18,6 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityRegainHealthEvent;
 import org.bukkit.event.entity.EntityRegainHealthEvent.RegainReason;
 import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.event.inventory.InventoryInteractEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
@@ -31,12 +30,14 @@ import org.bukkit.potion.PotionEffectType;
 import net.novauniverse.games.hive.NovaHive;
 import net.novauniverse.games.hive.game.config.ConfiguredHiveData;
 import net.novauniverse.games.hive.game.config.HiveConfig;
+import net.novauniverse.games.hive.game.event.HiveTeamCompletedEvent;
 import net.novauniverse.games.hive.game.object.flower.FlowerData;
 import net.novauniverse.games.hive.game.object.hive.HiveData;
 import net.novauniverse.games.hive.game.object.hive.HivePlayerData;
 import net.novauniverse.games.hive.game.object.misc.PlayerFlowerDistanceComparator;
 import net.zeeraa.novacore.commons.log.Log;
 import net.zeeraa.novacore.commons.tasks.Task;
+import net.zeeraa.novacore.commons.utils.TextUtils;
 import net.zeeraa.novacore.spigot.abstraction.enums.VersionIndependentSound;
 import net.zeeraa.novacore.spigot.gameengine.module.modules.game.GameEndReason;
 import net.zeeraa.novacore.spigot.gameengine.module.modules.game.MapGame;
@@ -63,6 +64,8 @@ public class Hive extends MapGame implements Listener {
 
 	private int timeLeft;
 
+	private int placementCounter;
+
 	private Task timer;
 	private Task checkTask;
 
@@ -87,7 +90,10 @@ public class Hive extends MapGame implements Listener {
 		this.flowers = new ArrayList<FlowerData>();
 		this.playerData = new ArrayList<>();
 
+		this.placementCounter = 1;
+
 		this.timeLeft = 0;
+
 		this.timer = new SimpleTask(getPlugin(), new Runnable() {
 			@Override
 			public void run() {
@@ -464,6 +470,20 @@ public class Hive extends MapGame implements Listener {
 
 								hive.addHoney(amount);
 								hive.update();
+
+								if (hive.getHoney() >= config.getHoneyRequiredtoFillJar()) {
+									HiveTeamCompletedEvent event = new HiveTeamCompletedEvent(hive.getOwner(), placementCounter);
+									Bukkit.getServer().getPluginManager().callEvent(event);
+
+									hive.getOwner().getOnlinePlayers().forEach(p -> {
+										p.setGameMode(GameMode.SPECTATOR);
+										VersionIndependentSound.LEVEL_UP.play(p);
+										p.sendTitle(ChatColor.GREEN + TextUtils.ordinal(placementCounter) + " place", "", 10, 40, 10);
+										players.remove(p.getUniqueId());
+									});
+
+									placementCounter++;
+								}
 							}
 						}
 					} else if (e.getItem().getType() == Material.GLASS_BOTTLE) {
