@@ -15,6 +15,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.entity.EntityRegainHealthEvent;
 import org.bukkit.event.entity.EntityRegainHealthEvent.RegainReason;
@@ -448,6 +449,21 @@ public class Hive extends MapGame implements Listener {
 
 	private boolean hasPlayerData(Player player) {
 		return playerData.stream().filter(pd -> pd.getPlayer() == player).count() > 0;
+	}
+
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+	public void onEntityDamage(EntityDamageEvent e) {
+		if (e.getEntity() instanceof Player) {
+			Player player = (Player) e.getEntity();
+			HivePlayerData playerData = getPlayerData(player);
+			if (playerData != null) {
+				if (playerData.isCollecting()) {
+					player.sendMessage(ChatColor.RED + "Collecting canceled since you took damage");
+					playerData.setCollecting(false);
+					playerData.resetCollectionTime();
+				}
+			}
+		}
 	}
 
 	@EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
