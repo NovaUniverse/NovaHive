@@ -9,6 +9,8 @@ import org.bukkit.GameMode;
 import org.bukkit.GameRule;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.entity.EntityType;
+import org.bukkit.entity.Firework;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -29,6 +31,7 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.FireworkMeta;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 
@@ -54,6 +57,7 @@ import net.zeeraa.novacore.spigot.tasks.SimpleTask;
 import net.zeeraa.novacore.spigot.teams.TeamManager;
 import net.zeeraa.novacore.spigot.utils.ItemBuilder;
 import net.zeeraa.novacore.spigot.utils.PlayerUtils;
+import net.zeeraa.novacore.spigot.utils.RandomFireworkEffect;
 import xyz.xenondevs.particle.ParticleEffect;
 
 public class Hive extends MapGame implements Listener {
@@ -396,6 +400,45 @@ public class Hive extends MapGame implements Listener {
 		Task.tryStopTask(collectorTask);
 		Task.tryStopTask(particleTask);
 		Task.tryStopTask(regenTask);
+
+		switch (reason) {
+		case ALL_FINISHED:
+			Bukkit.getServer().broadcastMessage(ChatColor.RED + "" + ChatColor.BOLD + "Game Over> No remaining players");
+			break;
+
+		case TIME:
+			Bukkit.getServer().broadcastMessage(ChatColor.RED + "" + ChatColor.BOLD + "Game Over> Time is up");
+			break;
+
+		default:
+			break;
+		}
+
+		VersionIndependentSound.WITHER_DEATH.broadcast(0.5F, 1.0F);
+
+		hives.forEach(hive -> {
+			Location location = hive.getSpawnLocation();
+			Firework fw = (Firework) location.getWorld().spawnEntity(location, EntityType.FIREWORK);
+			FireworkMeta fwm = fw.getFireworkMeta();
+
+			fwm.setPower(0);
+			fwm.addEffect(RandomFireworkEffect.randomFireworkEffect());
+
+			if (random.nextBoolean()) {
+				fwm.addEffect(RandomFireworkEffect.randomFireworkEffect());
+			}
+
+			fw.setFireworkMeta(fwm);
+			fw.detonate();
+		});
+
+		Bukkit.getServer().getOnlinePlayers().forEach(player -> {
+			VersionIndependentUtils.get().resetEntityMaxHealth(player);
+			player.setFoodLevel(20);
+			PlayerUtils.clearPlayerInventory(player);
+			PlayerUtils.resetPlayerXP(player);
+			player.setGameMode(GameMode.SPECTATOR);
+		});
 
 		ended = true;
 	}
