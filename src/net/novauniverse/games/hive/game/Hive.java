@@ -57,6 +57,7 @@ import net.zeeraa.novacore.spigot.gameengine.module.modules.game.MapGame;
 import net.zeeraa.novacore.spigot.gameengine.module.modules.game.elimination.PlayerQuitEliminationAction;
 import net.zeeraa.novacore.spigot.tasks.SimpleTask;
 import net.zeeraa.novacore.spigot.teams.TeamManager;
+import net.zeeraa.novacore.spigot.utils.ChatColorRGBMapper;
 import net.zeeraa.novacore.spigot.utils.ItemBuilder;
 import net.zeeraa.novacore.spigot.utils.PlayerUtils;
 import net.zeeraa.novacore.spigot.utils.RandomFireworkEffect;
@@ -383,9 +384,15 @@ public class Hive extends MapGame implements Listener {
 		weaponBuilder.setName("Stinger");
 		weaponBuilder.setAmount(1);
 
+		ItemBuilder chestplateBuilder = new ItemBuilder(Material.LEATHER_CHESTPLATE);
+		chestplateBuilder.setAmount(1);
+		chestplateBuilder.setLeatherArmorColor(ChatColorRGBMapper.chatColorToRGBColorData(playerHive.getOwner().getTeamColor()).toBukkitColor());
+
 		player.getInventory().setItem(Hive.WEAPON_SLOT, weaponBuilder.build());
 		player.getInventory().setItem(Hive.COLLECTOR_BOTTLE_SLOT, collectorBuilder.build());
 		player.getInventory().setItem(Hive.COMPASS_SLOT, compassBuilder.build());
+
+		player.getInventory().setChestplate(chestplateBuilder.build());
 
 		this.setPlayerHoney(player, 0);
 	}
