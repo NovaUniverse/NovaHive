@@ -13,6 +13,7 @@ import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Firework;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
+import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -38,6 +39,7 @@ import org.bukkit.potion.PotionEffectType;
 import net.novauniverse.games.hive.NovaHive;
 import net.novauniverse.games.hive.game.config.ConfiguredHiveData;
 import net.novauniverse.games.hive.game.config.HiveConfig;
+import net.novauniverse.games.hive.game.event.HivePlayerDepositHoneyEvent;
 import net.novauniverse.games.hive.game.event.HiveTeamCompletedEvent;
 import net.novauniverse.games.hive.game.object.flower.FlowerData;
 import net.novauniverse.games.hive.game.object.hive.HiveData;
@@ -619,9 +621,12 @@ public class Hive extends MapGame implements Listener {
 									hive.addHoney(amount);
 									hive.update();
 
+									Event depositEvent = new HivePlayerDepositHoneyEvent(hive, player, amount);
+									Bukkit.getServer().getPluginManager().callEvent(depositEvent);
+
 									if (hive.getHoney() >= config.getHoneyRequiredtoFillJar()) {
-										HiveTeamCompletedEvent event = new HiveTeamCompletedEvent(hive.getOwner(), placementCounter);
-										Bukkit.getServer().getPluginManager().callEvent(event);
+										Event completeEvent = new HiveTeamCompletedEvent(hive.getOwner(), placementCounter);
+										Bukkit.getServer().getPluginManager().callEvent(completeEvent);
 
 										Bukkit.getServer().broadcastMessage(ChatColor.GREEN + "" + ChatColor.BOLD + "Team Completed> " + hive.getOwner().getTeamColor() + hive.getOwner().getDisplayName() + ChatColor.GREEN + ChatColor.BOLD + " filled their hive. " + TextUtils.ordinal(placementCounter) + " place");
 
