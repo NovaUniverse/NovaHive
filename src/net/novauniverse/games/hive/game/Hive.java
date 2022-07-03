@@ -629,7 +629,7 @@ public class Hive extends MapGame implements Listener {
 										Event completeEvent = new HiveTeamCompletedEvent(hive.getOwner(), placementCounter);
 										Bukkit.getServer().getPluginManager().callEvent(completeEvent);
 
-										Bukkit.getServer().broadcastMessage(ChatColor.GREEN + "" + ChatColor.BOLD + "Team Completed> " + hive.getOwner().getTeamColor() + hive.getOwner().getDisplayName() + ChatColor.GREEN + ChatColor.BOLD + " filled their hive. " + TextUtils.ordinal(placementCounter) + " place");
+										Bukkit.getServer().broadcastMessage(ChatColor.GREEN + "" + ChatColor.BOLD + "Team Completed> " + hive.getOwner().getTeamColor() + ChatColor.BOLD + hive.getOwner().getDisplayName() + ChatColor.GREEN + ChatColor.BOLD + " filled their hive. " + TextUtils.ordinal(placementCounter) + " place");
 
 										hive.getOwner().getOnlinePlayers().forEach(p -> {
 											p.setGameMode(GameMode.SPECTATOR);
