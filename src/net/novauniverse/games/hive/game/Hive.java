@@ -113,7 +113,6 @@ public class Hive extends MapGame implements Listener {
 		this.placementCounter = 1;
 
 		this.timeLeft = 0;
-
 		this.timer = new SimpleTask(getPlugin(), new Runnable() {
 			@Override
 			public void run() {
@@ -562,11 +561,13 @@ public class Hive extends MapGame implements Listener {
 		if (killer != null) {
 			int killerHoney = getPlayerHoney(killer);
 			int toAdd = honey;
-			if (killerHoney + honey > config.getMaxHoneyInInventory()) {
-				toAdd = config.getMaxHoneyInInventory() - killerHoney;
+			if (toAdd > 0) {
+				if (killerHoney + honey > config.getMaxHoneyInInventory()) {
+					toAdd = config.getMaxHoneyInInventory() - killerHoney;
+				}
+				addPlayerHoney(killer, toAdd);
+				killer.sendMessage(ChatColor.GREEN + "Stole " + toAdd + " bottle" + (toAdd == 1 ? "" : "s") + " of honey from " + player.getName());
 			}
-			addPlayerHoney(killer, toAdd);
-			killer.sendMessage(ChatColor.GREEN + "Stole " + toAdd + " bottle" + (toAdd == 1 ? "" : "s") + " of honey from " + player.getName());
 		}
 	}
 
