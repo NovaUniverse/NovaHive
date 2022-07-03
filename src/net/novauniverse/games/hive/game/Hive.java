@@ -555,6 +555,7 @@ public class Hive extends MapGame implements Listener {
 		VersionIndependentSound.WITHER_HURT.play(player, 0.5F, 1.0F);
 		VersionIndependentUtils.get().sendTitle(player, ChatColor.RED + "You died", ChatColor.AQUA + "Respawning in " + Hive.RESPAWN_TIMER + " seconds", 10, 60, 10);
 		player.sendMessage(ChatColor.RED + "You died. Respawning in " + Hive.RESPAWN_TIMER + " seconds");
+		player.setGameMode(GameMode.SPECTATOR);
 		respawnTimers.add(new RespawnTimer(player.getUniqueId()));
 		Log.trace("Hive", player.getName() + " died with " + honey + " honey");
 		Player killer = player.getKiller();
