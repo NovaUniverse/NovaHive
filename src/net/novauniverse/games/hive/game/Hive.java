@@ -255,6 +255,10 @@ public class Hive extends MapGame implements Listener {
 		return timeLeft;
 	}
 
+	public List<HiveData> getHives() {
+		return hives;
+	}
+
 	@Override
 	public void onStart() {
 		if (started) {
