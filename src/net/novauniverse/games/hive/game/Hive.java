@@ -3,10 +3,10 @@ package net.novauniverse.games.hive.game;
 import java.awt.Color;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
+import org.bukkit.GameRule;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.entity.LivingEntity;
@@ -15,13 +15,17 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.entity.EntityRegainHealthEvent;
 import org.bukkit.event.entity.EntityRegainHealthEvent.RegainReason;
+import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffect;
@@ -35,9 +39,12 @@ import net.novauniverse.games.hive.game.object.flower.FlowerData;
 import net.novauniverse.games.hive.game.object.hive.HiveData;
 import net.novauniverse.games.hive.game.object.hive.HivePlayerData;
 import net.novauniverse.games.hive.game.object.misc.PlayerFlowerDistanceComparator;
+import net.novauniverse.games.hive.game.object.misc.RespawnTimer;
 import net.zeeraa.novacore.commons.log.Log;
 import net.zeeraa.novacore.commons.tasks.Task;
 import net.zeeraa.novacore.commons.utils.TextUtils;
+import net.zeeraa.novacore.spigot.abstraction.VersionIndependentUtils;
+import net.zeeraa.novacore.spigot.abstraction.enums.VersionIndependentMaterial;
 import net.zeeraa.novacore.spigot.abstraction.enums.VersionIndependentSound;
 import net.zeeraa.novacore.spigot.gameengine.module.modules.game.GameEndReason;
 import net.zeeraa.novacore.spigot.gameengine.module.modules.game.MapGame;
@@ -49,13 +56,17 @@ import net.zeeraa.novacore.spigot.utils.PlayerUtils;
 import xyz.xenondevs.particle.ParticleEffect;
 
 public class Hive extends MapGame implements Listener {
-	public static final int COLLECTOR_BOTTLE_SLOT = 0;
-	public static final int COMPASS_SLOT = 1;
+	// Inventory
+	public static final int WEAPON_SLOT = 0;
+	public static final int COLLECTOR_BOTTLE_SLOT = 1;
+	public static final int COMPASS_SLOT = 2;
 	public static final int HONEY_SLOT = 8;
 
 	public static final int COLLECTION_RADIUS = 6;
 
 	public static final int COLLECTION_TIME = 10; // 2 = 1 second
+
+	public static final int RESPAWN_TIMER = 10; // 10 seconds
 
 	private boolean started;
 	private boolean ended;
@@ -77,6 +88,7 @@ public class Hive extends MapGame implements Listener {
 	private List<HiveData> hives;
 	private List<FlowerData> flowers;
 	private List<HivePlayerData> playerData;
+	private List<RespawnTimer> respawnTimers;
 
 	public Hive() {
 		super(NovaHive.getInstance());
@@ -88,7 +100,8 @@ public class Hive extends MapGame implements Listener {
 
 		this.hives = new ArrayList<HiveData>();
 		this.flowers = new ArrayList<FlowerData>();
-		this.playerData = new ArrayList<>();
+		this.playerData = new ArrayList<HivePlayerData>();
+		this.respawnTimers = new ArrayList<RespawnTimer>();
 
 		this.placementCounter = 1;
 
@@ -105,7 +118,18 @@ public class Hive extends MapGame implements Listener {
 					timeLeft--;
 				} else if (!hasEnded()) {
 					endGame(GameEndReason.TIME);
+					return;
 				}
+
+				// Respawn timers
+				respawnTimers.stream().filter(d -> d.shouldDecrement()).forEach(d -> d.decrement());
+				try {
+					respawnTimers.stream().filter(d -> d.isDone()).forEach(d -> spawnPlayer(d.getPlayer()));
+				} catch (Exception e) {
+					Log.error("Hive", "Failed to respawn a player. " + e.getClass().getName() + " " + e.getMessage());
+					e.printStackTrace();
+				}
+				respawnTimers.removeIf(d -> d.isDone());
 			}
 		}, 20L);
 
@@ -304,6 +328,11 @@ public class Hive extends MapGame implements Listener {
 		Task.tryStartTask(particleTask);
 		Task.tryStartTask(regenTask);
 
+		Bukkit.getServer().getWorlds().forEach(world -> {
+			world.setGameRule(GameRule.KEEP_INVENTORY, true);
+			world.setGameRule(GameRule.DO_DAYLIGHT_CYCLE, false);
+		});
+
 		started = true;
 
 		sendBeginEvent();
@@ -344,6 +373,11 @@ public class Hive extends MapGame implements Listener {
 		compassBuilder.addLore(ChatColor.GREEN + "Use this to find your hive");
 		compassBuilder.setAmount(1);
 
+		ItemBuilder weaponBuilder = new ItemBuilder(VersionIndependentMaterial.WOODEN_SWORD);
+		weaponBuilder.setName("Stinger");
+		weaponBuilder.setAmount(1);
+
+		player.getInventory().setItem(Hive.WEAPON_SLOT, weaponBuilder.build());
 		player.getInventory().setItem(Hive.COLLECTOR_BOTTLE_SLOT, collectorBuilder.build());
 		player.getInventory().setItem(Hive.COMPASS_SLOT, compassBuilder.build());
 
@@ -438,6 +472,56 @@ public class Hive extends MapGame implements Listener {
 	}
 
 	@EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
+	public void onPlayerDropItem(PlayerDropItemEvent e) {
+		if (started) {
+			if (e.getPlayer().getGameMode() != GameMode.CREATIVE) {
+				e.setCancelled(true);
+			}
+		}
+	}
+
+	@EventHandler(priority = EventPriority.MONITOR)
+	public void onPlayerRespawn(PlayerRespawnEvent e) {
+		e.getPlayer().setGameMode(GameMode.SPECTATOR);
+	}
+
+	@EventHandler(priority = EventPriority.NORMAL)
+	public void onPlayerDeath(PlayerDeathEvent e) {
+		Player player = e.getEntity();
+		int honey = getPlayerHoney(player);
+		setPlayerHoney(player, 0);
+		e.setKeepInventory(true);
+		VersionIndependentSound.WITHER_HURT.play(player, 0.5F, 1.0F);
+		VersionIndependentUtils.get().sendTitle(player, ChatColor.RED + "You died", ChatColor.AQUA + "Respawning in " + Hive.RESPAWN_TIMER + " seconds", 10, 60, 10);
+		player.sendMessage(ChatColor.RED + "You died. Respawning in " + Hive.RESPAWN_TIMER + " seconds");
+		respawnTimers.add(new RespawnTimer(player.getUniqueId()));
+		Log.trace("Hive", player.getName() + " died with " + honey + " honey");
+		Player killer = player.getKiller();
+		if (killer != null) {
+			int killerHoney = getPlayerHoney(killer);
+			int toAdd = honey;
+			if (killerHoney + honey > config.getMaxHoneyInInventory()) {
+				toAdd = config.getMaxHoneyInInventory() - killerHoney;
+			}
+			addPlayerHoney(killer, toAdd);
+			killer.sendMessage(ChatColor.GREEN + "Stole " + toAdd + " bottle" + (toAdd == 1 ? "" : "s") + " of honey from " + player.getName());
+		}
+	}
+
+	@EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
+	public void onPlayerDropItem(EntityPickupItemEvent e) {
+		if (e.getEntity() instanceof Player) {
+			Player player = (Player) e.getEntity();
+
+			if (started) {
+				if (player.getGameMode() != GameMode.CREATIVE) {
+					e.setCancelled(true);
+				}
+			}
+		}
+	}
+
+	@EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
 	public void onInventoryClick(InventoryClickEvent e) {
 		if (started && !ended) {
 			if (e.getWhoClicked() instanceof Player) {
@@ -461,51 +545,53 @@ public class Hive extends MapGame implements Listener {
 			if (e.getAction() == Action.RIGHT_CLICK_AIR || e.getAction() == Action.RIGHT_CLICK_BLOCK) {
 				Player player = e.getPlayer();
 				if (getPlayers().contains(player.getUniqueId())) {
-					if (e.getItem().getType() == Material.HONEY_BOTTLE) {
-						HiveData hive = hives.stream().filter(h -> h.canDeposit(player)).findFirst().orElse(null);
-						if (hive == null) {
-							player.sendMessage(ChatColor.RED + "You need to enter your hive before you can deposit honey. You can use your compass to find your way back home");
-						} else {
-							int amount = this.getPlayerHoney(player);
-							if (amount > 0) {
-								this.setPlayerHoney(player, 0);
+					if (e.getItem() != null) {
+						if (e.getItem().getType() == Material.HONEY_BOTTLE) {
+							HiveData hive = hives.stream().filter(h -> h.canDeposit(player)).findFirst().orElse(null);
+							if (hive == null) {
+								player.sendMessage(ChatColor.RED + "You need to enter your hive before you can deposit honey. You can use your compass to find your way back home");
+							} else {
+								int amount = this.getPlayerHoney(player);
+								if (amount > 0) {
+									this.setPlayerHoney(player, 0);
 
-								hive.getOwner().sendMessage(ChatColor.GREEN + player.getName() + " deposited " + amount + " bottle" + (amount == 1 ? "" : "s") + " of honey");
+									hive.getOwner().sendMessage(ChatColor.GREEN + player.getName() + " deposited " + amount + " bottle" + (amount == 1 ? "" : "s") + " of honey");
 
-								hive.addHoney(amount);
-								hive.update();
+									hive.addHoney(amount);
+									hive.update();
 
-								if (hive.getHoney() >= config.getHoneyRequiredtoFillJar()) {
-									HiveTeamCompletedEvent event = new HiveTeamCompletedEvent(hive.getOwner(), placementCounter);
-									Bukkit.getServer().getPluginManager().callEvent(event);
+									if (hive.getHoney() >= config.getHoneyRequiredtoFillJar()) {
+										HiveTeamCompletedEvent event = new HiveTeamCompletedEvent(hive.getOwner(), placementCounter);
+										Bukkit.getServer().getPluginManager().callEvent(event);
 
-									hive.getOwner().getOnlinePlayers().forEach(p -> {
-										p.setGameMode(GameMode.SPECTATOR);
-										VersionIndependentSound.LEVEL_UP.play(p);
-										p.sendTitle(ChatColor.GREEN + TextUtils.ordinal(placementCounter) + " place", "", 10, 40, 10);
-										players.remove(p.getUniqueId());
-									});
+										hive.getOwner().getOnlinePlayers().forEach(p -> {
+											p.setGameMode(GameMode.SPECTATOR);
+											VersionIndependentSound.LEVEL_UP.play(p);
+											p.sendTitle(ChatColor.GREEN + TextUtils.ordinal(placementCounter) + " place", "", 10, 40, 10);
+											players.remove(p.getUniqueId());
+										});
 
-									placementCounter++;
+										placementCounter++;
+									}
 								}
 							}
-						}
-					} else if (e.getItem().getType() == Material.GLASS_BOTTLE) {
-						HivePlayerData playerData = getPlayerData(player);
-						if (!playerData.isCollecting()) {
-							if (getPlayerHoney(player) >= config.getMaxHoneyInInventory()) {
-								player.sendMessage(ChatColor.RED + "You cant hold any more honey in your inventory. Find your hive and deposit the honey before you can collect more");
-							} else {
-								if (flowers.stream().filter(flower -> flower.canCollect(player)).count() > 0) {
-									if (!player.isFlying()) {
-										playerData.resetCollectionTime();
-										playerData.setCollecting(true);
-									} else {
-										player.sendMessage(ChatColor.RED + "You need to land before collecting honey");
-									}
-
+						} else if (e.getItem().getType() == Material.GLASS_BOTTLE) {
+							HivePlayerData playerData = getPlayerData(player);
+							if (!playerData.isCollecting()) {
+								if (getPlayerHoney(player) >= config.getMaxHoneyInInventory()) {
+									player.sendMessage(ChatColor.RED + "You cant hold any more honey in your inventory. Find your hive and deposit the honey before you can collect more");
 								} else {
-									player.sendMessage(ChatColor.RED + "You are not in range of a flower with pollen");
+									if (flowers.stream().filter(flower -> flower.canCollect(player)).count() > 0) {
+										if (!player.isFlying()) {
+											playerData.resetCollectionTime();
+											playerData.setCollecting(true);
+										} else {
+											player.sendMessage(ChatColor.RED + "You need to land before collecting honey");
+										}
+
+									} else {
+										player.sendMessage(ChatColor.RED + "You are not in range of a flower with pollen");
+									}
 								}
 							}
 						}
