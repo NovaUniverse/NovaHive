@@ -383,10 +383,12 @@ public class Hive extends MapGame implements Listener {
 		ItemBuilder weaponBuilder = new ItemBuilder(VersionIndependentMaterial.WOODEN_SWORD);
 		weaponBuilder.setName("Stinger");
 		weaponBuilder.setAmount(1);
+		weaponBuilder.setUnbreakable(true);
 
 		ItemBuilder chestplateBuilder = new ItemBuilder(Material.LEATHER_CHESTPLATE);
 		chestplateBuilder.setAmount(1);
 		chestplateBuilder.setLeatherArmorColor(ChatColorRGBMapper.chatColorToRGBColorData(playerHive.getOwner().getTeamColor()).toBukkitColor());
+		chestplateBuilder.setUnbreakable(true);
 
 		player.getInventory().setItem(Hive.WEAPON_SLOT, weaponBuilder.build());
 		player.getInventory().setItem(Hive.COLLECTOR_BOTTLE_SLOT, collectorBuilder.build());
