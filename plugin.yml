@@ -2,6 +2,6 @@ name: Hive
 main: net.novauniverse.games.hive.NovaHive
 description: Novauniverse Hive
 version: 1.0
-depend: [NovaCore, NovaCoreGameEngine]
+depend: [NovaCore, NovaCoreGameEngine, HolographicDisplays]
 softdepend: [NovaGamesTarget]
 api-version: 1.16

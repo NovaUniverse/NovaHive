@@ -10,6 +10,10 @@ import org.bukkit.boss.BarStyle;
 import org.bukkit.boss.BossBar;
 import org.bukkit.entity.Player;
 
+import com.gmail.filoghost.holographicdisplays.api.Hologram;
+import com.gmail.filoghost.holographicdisplays.api.HologramsAPI;
+import com.gmail.filoghost.holographicdisplays.api.line.TextLine;
+
 import net.novauniverse.games.hive.NovaHive;
 import net.zeeraa.novacore.spigot.teams.Team;
 import net.zeeraa.novacore.spigot.teams.TeamManager;
@@ -26,6 +30,8 @@ public class HiveData {
 
 	private Location honeyJarLocation;
 	private Location spawnLocation;
+
+	private Hologram hologram;
 
 	private BossBar bossBar;
 
@@ -44,6 +50,12 @@ public class HiveData {
 
 		this.bossBar = Bukkit.createBossBar(getBarText(), BarColor.GREEN, BarStyle.SOLID);
 		this.bossBar.setProgress(0);
+
+		this.hologram = HologramsAPI.createHologram(NovaHive.getInstance(), spawnLocation.clone().add(0D, 2.5D, 0D));
+		hologram.appendTextLine(owner.getTeamColor() + owner.getDisplayName());
+		hologram.appendTextLine("Loading...");
+
+		this.updateHologram();
 	}
 
 	public int getHoney() {
@@ -105,6 +117,10 @@ public class HiveData {
 		return false;
 	}
 
+	public void updateHologram() {
+		((TextLine) this.hologram.getLine(1)).setText(ChatColor.GOLD + "" + honey + " / " + NovaHive.getInstance().getGame().getConfig().getHoneyRequiredtoFillJar());
+	}
+
 	public void updateBossBarPlayers() {
 		bossBar.removeAll();
 		Bukkit.getServer().getOnlinePlayers().forEach(player -> {
@@ -129,10 +145,14 @@ public class HiveData {
 		bossBar.setProgress(progress);
 		bossBar.setTitle(getBarText());
 
+		this.updateHologram();
+
 		double perStep = toFill / (double) honeyJarHeight;
 		int blocksFilled = (int) Math.ceil(honey / perStep);
 
-		//Log.trace("HiveData", "honey: " + honey + " toFill: " + toFill + " jarHeight: " + honeyJarHeight + " perStep: " + perStep + " blocksFilled: " + blocksFilled);
+		// Log.trace("HiveData", "honey: " + honey + " toFill: " + toFill + " jarHeight:
+		// " + honeyJarHeight + " perStep: " + perStep + " blocksFilled: " +
+		// blocksFilled);
 
 		for (int x = -1; x <= 1; x++) {
 			for (int z = -1; z <= 1; z++) {
