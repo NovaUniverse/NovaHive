@@ -28,6 +28,7 @@ import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.inventory.EquipmentSlot;
@@ -74,7 +75,8 @@ public class Hive extends MapGame implements Listener {
 
 	public static final int COLLECTION_TIME = 10; // 2 = 1 second
 
-	public static final int RESPAWN_TIMER = 10; // 10 seconds
+	public static final int RESPAWN_TIMER_VALUE = 10; // 10 seconds
+	public static final int START_TIMER_VALUE = 10; // 10 seconds
 
 	private boolean started;
 	private boolean ended;
@@ -87,16 +89,18 @@ public class Hive extends MapGame implements Listener {
 
 	private Task timer;
 	private Task checkTask;
-
 	private Task collectorTask;
 	private Task particleTask;
-
 	private Task regenTask;
+	private Task startTimer;
 
 	private List<HiveData> hives;
 	private List<FlowerData> flowers;
 	private List<HivePlayerData> playerData;
 	private List<RespawnTimer> respawnTimers;
+
+	private int startTime;
+	private boolean startTimerFinished;
 
 	public Hive() {
 		super(NovaHive.getInstance());
@@ -112,6 +116,26 @@ public class Hive extends MapGame implements Listener {
 		this.respawnTimers = new ArrayList<RespawnTimer>();
 
 		this.placementCounter = 1;
+
+		this.startTime = START_TIMER_VALUE;
+		this.startTimerFinished = false;
+
+		this.startTimer = new SimpleTask(getPlugin(), new Runnable() {
+			@Override
+			public void run() {
+				if (startTime > 0) {
+					VersionIndependentSound.NOTE_PLING.broadcast(1.0F, 1.0F);
+					Bukkit.getServer().getOnlinePlayers().forEach(player -> VersionIndependentUtils.get().sendTitle(player, ChatColor.GREEN + "Starting in " + startTime, "", 0, 25, 0));
+					startTime--;
+				} else {
+					Task.tryStopTask(startTimer);
+					startTimerFinished = true;
+					VersionIndependentSound.NOTE_PLING.broadcast(1.0F, 1.25F);
+					Bukkit.getServer().getOnlinePlayers().forEach(player -> VersionIndependentUtils.get().sendTitle(player, ChatColor.GREEN + "GO", "", 0, 20, 10));
+					sendBeginEvent();
+				}
+			}
+		}, 20L);
 
 		this.timeLeft = 0;
 		this.timer = new SimpleTask(getPlugin(), new Runnable() {
@@ -129,7 +153,6 @@ public class Hive extends MapGame implements Listener {
 				}
 
 				// Respawn timers
-				respawnTimers.stream().filter(d -> d.shouldDecrement()).forEach(d -> d.decrement());
 				try {
 					respawnTimers.stream().filter(d -> d.isDone()).forEach(d -> spawnPlayer(d.getPlayer()));
 				} catch (Exception e) {
@@ -137,6 +160,7 @@ public class Hive extends MapGame implements Listener {
 					e.printStackTrace();
 				}
 				respawnTimers.removeIf(d -> d.isDone());
+				respawnTimers.stream().filter(d -> d.shouldDecrement()).forEach(d -> d.decrement());
 			}
 		}, 20L);
 
@@ -342,7 +366,9 @@ public class Hive extends MapGame implements Listener {
 
 		started = true;
 
-		sendBeginEvent();
+		Task.tryStartTask(startTimer);
+
+		Bukkit.getServer().getOnlinePlayers().forEach(player -> player.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, START_TIMER_VALUE * 20, 0)));
 	}
 
 	public void spawnPlayer(Player player) {
@@ -504,6 +530,8 @@ public class Hive extends MapGame implements Listener {
 		return playerData.stream().filter(pd -> pd.getPlayer() == player).count() > 0;
 	}
 
+	/* ===== Events ===== */
+
 	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	public void onEntityDamage(EntityDamageEvent e) {
 		if (e.getEntity() instanceof Player) {
@@ -558,13 +586,18 @@ public class Hive extends MapGame implements Listener {
 	public void onPlayerDeath(PlayerDeathEvent e) {
 		Player player = e.getEntity();
 		int honey = getPlayerHoney(player);
+
 		setPlayerHoney(player, 0);
+
 		e.setKeepInventory(true);
 		VersionIndependentSound.WITHER_HURT.play(player, 0.5F, 1.0F);
-		VersionIndependentUtils.get().sendTitle(player, ChatColor.RED + "You died", ChatColor.AQUA + "Respawning in " + Hive.RESPAWN_TIMER + " seconds", 10, 60, 10);
-		player.sendMessage(ChatColor.RED + "You died. Respawning in " + Hive.RESPAWN_TIMER + " seconds");
+		player.sendMessage(ChatColor.RED + "You died. Respawning in " + Hive.RESPAWN_TIMER_VALUE + " seconds");
 		player.setGameMode(GameMode.SPECTATOR);
-		respawnTimers.add(new RespawnTimer(player.getUniqueId()));
+
+		RespawnTimer respawnTimer = new RespawnTimer(player.getUniqueId());
+		respawnTimers.add(respawnTimer);
+		respawnTimer.showTitle();
+
 		Log.trace("Hive", player.getName() + " died with " + honey + " honey");
 		Player killer = player.getKiller();
 		if (killer != null) {
@@ -608,6 +641,18 @@ public class Hive extends MapGame implements Listener {
 					e.setCancelled(true);
 				}
 			}
+		}
+	}
+
+	@EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
+	public void onPlayerMove(PlayerMoveEvent e) {
+		if (started && !ended && !startTimerFinished) {
+			Location to = e.getFrom().clone();
+
+			to.setYaw(e.getTo().getYaw());
+			to.setPitch(e.getTo().getPitch());
+
+			e.setTo(to);
 		}
 	}
 
