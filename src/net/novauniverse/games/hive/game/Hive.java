@@ -146,6 +146,21 @@ public class Hive extends MapGame implements Listener {
 
 				// Time left
 				if (timeLeft > 0) {
+					if (timeLeft == 30 || timeLeft == 60) {
+						Bukkit.getServer().broadcastMessage(ChatColor.RED + "" + timeLeft + " seconds left " + TextUtils.ICON_WARNING);
+						Bukkit.getServer().getOnlinePlayers().forEach(player -> {
+							VersionIndependentSound.NOTE_PLING.play(player);
+							VersionIndependentUtils.get().sendTitle(player, "", ChatColor.RED + TextUtils.ICON_WARNING + " " + timeLeft + " seconds left " + TextUtils.ICON_WARNING, 0, 40, 10);
+						});
+					}
+
+					if (timeLeft <= 10) {
+						Bukkit.getServer().getOnlinePlayers().forEach(player -> {
+							VersionIndependentSound.NOTE_PLING.play(player);
+							VersionIndependentUtils.get().sendTitle(player, "", ChatColor.RED + TextUtils.ICON_WARNING + " " + timeLeft + " second" + (timeLeft == 1 ? "" : "s") + " left " + TextUtils.ICON_WARNING, 0, 20, 10);
+						});
+					}
+					
 					timeLeft--;
 				} else if (!hasEnded()) {
 					endGame(GameEndReason.TIME);
