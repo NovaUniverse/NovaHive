@@ -57,6 +57,7 @@ import net.zeeraa.novacore.spigot.gameengine.module.modules.game.GameEndReason;
 import net.zeeraa.novacore.spigot.gameengine.module.modules.game.MapGame;
 import net.zeeraa.novacore.spigot.gameengine.module.modules.game.elimination.PlayerQuitEliminationAction;
 import net.zeeraa.novacore.spigot.tasks.SimpleTask;
+import net.zeeraa.novacore.spigot.teams.Team;
 import net.zeeraa.novacore.spigot.teams.TeamManager;
 import net.zeeraa.novacore.spigot.utils.ChatColorRGBMapper;
 import net.zeeraa.novacore.spigot.utils.ItemBuilder;
@@ -629,6 +630,22 @@ public class Hive extends MapGame implements Listener {
 				addPlayerHoney(killer, toAdd);
 				killer.sendMessage(ChatColor.GREEN + "Stole " + toAdd + " bottle" + (toAdd == 1 ? "" : "s") + " of honey from " + player.getName());
 			}
+
+			net.md_5.bungee.api.ChatColor playerColor = net.md_5.bungee.api.ChatColor.AQUA;
+			net.md_5.bungee.api.ChatColor killerColor = net.md_5.bungee.api.ChatColor.AQUA;
+
+			Team playerTeam = TeamManager.getTeamManager().getPlayerTeam(player);
+			Team killerTeam = TeamManager.getTeamManager().getPlayerTeam(killer);
+
+			if (playerTeam != null) {
+				playerColor = playerTeam.getTeamColor();
+			}
+
+			if (killerTeam != null) {
+				killerColor = killerTeam.getTeamColor();
+			}
+
+			Bukkit.getServer().broadcastMessage(ChatColor.RED + "" + ChatColor.BOLD + "Player Killed> " + playerColor + ChatColor.BOLD + player.getName() + ChatColor.RED + ChatColor.BOLD + " was killed by " + killerColor + ChatColor.BOLD + killer.getName());
 		}
 	}
 
