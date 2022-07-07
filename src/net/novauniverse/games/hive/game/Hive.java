@@ -160,7 +160,7 @@ public class Hive extends MapGame implements Listener {
 							VersionIndependentUtils.get().sendTitle(player, "", ChatColor.RED + TextUtils.ICON_WARNING + " " + timeLeft + " second" + (timeLeft == 1 ? "" : "s") + " left " + TextUtils.ICON_WARNING, 0, 20, 10);
 						});
 					}
-					
+
 					timeLeft--;
 				} else if (!hasEnded()) {
 					endGame(GameEndReason.TIME);
@@ -459,6 +459,10 @@ public class Hive extends MapGame implements Listener {
 
 		case TIME:
 			Bukkit.getServer().broadcastMessage(ChatColor.RED + "" + ChatColor.BOLD + "Game Over> Time is up");
+			break;
+
+		case OPERATOR_ENDED_GAME:
+			Bukkit.getServer().broadcastMessage(ChatColor.RED + "" + ChatColor.BOLD + "Game Over> An admin has ended the game");
 			break;
 
 		default:
