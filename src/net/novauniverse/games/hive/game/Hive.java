@@ -384,7 +384,7 @@ public class Hive extends MapGame implements Listener {
 
 		Task.tryStartTask(startTimer);
 
-		Bukkit.getServer().getOnlinePlayers().forEach(player -> player.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, START_TIMER_VALUE * 20, 0)));
+		Bukkit.getServer().getOnlinePlayers().forEach(player -> player.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, (START_TIMER_VALUE * 20) + 40, 0)));
 	}
 
 	public void spawnPlayer(Player player) {
