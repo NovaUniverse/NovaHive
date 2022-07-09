@@ -526,7 +526,12 @@ public class Hive extends MapGame implements Listener {
 			 * "Cant deposit"); player.getInventory().setItem(Hive.HONEY_SLOT,
 			 * builder.build());
 			 */
-			player.getInventory().setItem(HONEY_SLOT, ItemBuilder.AIR);
+			ItemBuilder noHoney = new ItemBuilder(Material.BARRIER);
+			
+			noHoney.setAmount(1);
+			noHoney.setName(ChatColor.RED + "No honey");
+			
+			player.getInventory().setItem(HONEY_SLOT, noHoney.build());
 		} else {
 			int max = getConfig().getMaxHoneyInInventory();
 			if (amount > max) {
