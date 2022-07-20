@@ -128,7 +128,7 @@ public class Hive extends MapGame implements Listener {
 				if (startTime > 0) {
 					VersionIndependentSound.NOTE_PLING.broadcast(1.0F, 1.0F);
 					Bukkit.getServer().getOnlinePlayers().forEach(player -> VersionIndependentUtils.get().sendTitle(player, ChatColor.GREEN + "Starting in " + startTime, "", 0, 25, 0));
-					Event event = new HiveInitialCountdownEvent(timeLeft);
+					Event event = new HiveInitialCountdownEvent(startTime);
 					Bukkit.getServer().getPluginManager().callEvent(event);
 					startTime--;
 				} else {
@@ -165,7 +165,9 @@ public class Hive extends MapGame implements Listener {
 						});
 					}
 
-					timeLeft--;
+					if (startTimerFinished) {
+						timeLeft--;
+					}
 				} else if (!hasEnded()) {
 					endGame(GameEndReason.TIME);
 					return;
@@ -530,10 +532,10 @@ public class Hive extends MapGame implements Listener {
 			 * builder.build());
 			 */
 			ItemBuilder noHoney = new ItemBuilder(Material.BARRIER);
-			
+
 			noHoney.setAmount(1);
 			noHoney.setName(ChatColor.RED + "No honey");
-			
+
 			player.getInventory().setItem(HONEY_SLOT, noHoney.build());
 		} else {
 			int max = getConfig().getMaxHoneyInInventory();
