@@ -40,6 +40,7 @@ import org.bukkit.potion.PotionEffectType;
 import net.novauniverse.games.hive.NovaHive;
 import net.novauniverse.games.hive.game.config.ConfiguredHiveData;
 import net.novauniverse.games.hive.game.config.HiveConfig;
+import net.novauniverse.games.hive.game.event.HiveInitialCountdownEvent;
 import net.novauniverse.games.hive.game.event.HivePlayerDepositHoneyEvent;
 import net.novauniverse.games.hive.game.event.HiveTeamCompletedEvent;
 import net.novauniverse.games.hive.game.object.flower.FlowerData;
@@ -127,6 +128,8 @@ public class Hive extends MapGame implements Listener {
 				if (startTime > 0) {
 					VersionIndependentSound.NOTE_PLING.broadcast(1.0F, 1.0F);
 					Bukkit.getServer().getOnlinePlayers().forEach(player -> VersionIndependentUtils.get().sendTitle(player, ChatColor.GREEN + "Starting in " + startTime, "", 0, 25, 0));
+					Event event = new HiveInitialCountdownEvent(timeLeft);
+					Bukkit.getServer().getPluginManager().callEvent(event);
 					startTime--;
 				} else {
 					Task.tryStopTask(startTimer);
