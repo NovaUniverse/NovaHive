@@ -31,6 +31,7 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
+import org.bukkit.event.player.PlayerTeleportEvent.TeleportCause;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.FireworkMeta;
@@ -339,6 +340,14 @@ public class Hive extends MapGame implements Listener {
 	}
 
 	@Override
+	public void tpToSpectator(Player player) {
+		PlayerUtils.clearPotionEffects(player);
+		PlayerUtils.resetMaxHealth(player);
+		player.setGameMode(GameMode.SPECTATOR);
+		player.teleport(getActiveMap().getSpectatorLocation(), TeleportCause.PLUGIN);
+	}
+
+	@Override
 	public void onStart() {
 		if (started) {
 			return;
@@ -367,10 +376,14 @@ public class Hive extends MapGame implements Listener {
 		timeLeft = config.getGameTime();
 
 		Bukkit.getServer().getOnlinePlayers().forEach(player -> {
-			if (!hasPlayerData(player)) {
-				playerData.add(new HivePlayerData(player));
+			if (players.contains(player.getUniqueId())) {
+				if (!hasPlayerData(player)) {
+					playerData.add(new HivePlayerData(player));
+				}
+				spawnPlayer(player);
+			} else {
+				tpToSpectator(player);
 			}
-			spawnPlayer(player);
 		});
 
 		hives.forEach(hive -> hive.updateBossBarPlayers());
@@ -392,7 +405,7 @@ public class Hive extends MapGame implements Listener {
 
 		Task.tryStartTask(startTimer);
 
-		Bukkit.getServer().getOnlinePlayers().forEach(player -> player.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, (START_TIMER_VALUE * 20) + 40, 0)));
+		Bukkit.getServer().getOnlinePlayers().stream().filter(p -> p.getGameMode() != GameMode.SPECTATOR).forEach(player -> player.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, (START_TIMER_VALUE * 20) + 40, 0)));
 	}
 
 	public void spawnPlayer(Player player) {
@@ -603,18 +616,22 @@ public class Hive extends MapGame implements Listener {
 	public void onPlayerJoin(PlayerJoinEvent e) {
 		Player player = e.getPlayer();
 
-		playerData.add(new HivePlayerData(player));
+		if (players.contains(player.getUniqueId())) {
+			playerData.add(new HivePlayerData(player));
 
-		hives.forEach(hive -> hive.updateBossBarPlayers());
+			hives.forEach(hive -> hive.updateBossBarPlayers());
 
-		if (hasStarted()) {
-			new BukkitRunnable() {
-				@Override
-				public void run() {
-					player.setAllowFlight(true);
-					player.setFlying(true);
-				}
-			}.runTaskLater(getPlugin(), 3L);
+			if (hasStarted()) {
+				new BukkitRunnable() {
+					@Override
+					public void run() {
+						player.setAllowFlight(true);
+						player.setFlying(true);
+					}
+				}.runTaskLater(getPlugin(), 3L);
+			}
+		} else {
+			tpToSpectator(player);
 		}
 	}
 
