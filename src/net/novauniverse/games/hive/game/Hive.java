@@ -631,7 +631,9 @@ public class Hive extends MapGame implements Listener {
 				}.runTaskLater(getPlugin(), 3L);
 			}
 		} else {
-			tpToSpectator(player);
+			if (hasStarted()) {
+				tpToSpectator(player);
+			}
 		}
 	}
 
