@@ -736,13 +736,15 @@ public class Hive extends MapGame implements Listener {
 
 	@EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
 	public void onPlayerMove(PlayerMoveEvent e) {
-		if (started && !ended && !startTimerFinished) {
-			Location to = e.getFrom().clone();
+		if (e.getPlayer().getGameMode() != GameMode.SPECTATOR) {
+			if (started && !ended && !startTimerFinished) {
+				Location to = e.getFrom().clone();
 
-			to.setYaw(e.getTo().getYaw());
-			to.setPitch(e.getTo().getPitch());
+				to.setYaw(e.getTo().getYaw());
+				to.setPitch(e.getTo().getPitch());
 
-			e.setTo(to);
+				e.setTo(to);
+			}
 		}
 	}
 
