@@ -36,11 +36,14 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.FireworkMeta;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
+import org.bukkit.scheduler.BukkitRunnable;
 
 import net.novauniverse.games.hive.NovaHive;
 import net.novauniverse.games.hive.game.config.ConfiguredHiveData;
 import net.novauniverse.games.hive.game.config.HiveConfig;
 import net.novauniverse.games.hive.game.event.HiveInitialCountdownEvent;
+import net.novauniverse.games.hive.game.event.HiveItemBuilderGeneratingEvent;
+import net.novauniverse.games.hive.game.event.HiveItemType;
 import net.novauniverse.games.hive.game.event.HivePlayerDepositHoneyEvent;
 import net.novauniverse.games.hive.game.event.HiveTeamCompletedEvent;
 import net.novauniverse.games.hive.game.object.flower.FlowerData;
@@ -437,6 +440,11 @@ public class Hive extends MapGame implements Listener {
 		chestplateBuilder.setLeatherArmorColor(ChatColorRGBMapper.chatColorToRGBColorData(playerHive.getOwner().getTeamColor()).toBukkitColor());
 		chestplateBuilder.setUnbreakable(true);
 
+		Bukkit.getServer().getPluginManager().callEvent(new HiveItemBuilderGeneratingEvent(collectorBuilder, player, HiveItemType.COLLECTOR_ITEM));
+		Bukkit.getServer().getPluginManager().callEvent(new HiveItemBuilderGeneratingEvent(compassBuilder, player, HiveItemType.COMPASS));
+		Bukkit.getServer().getPluginManager().callEvent(new HiveItemBuilderGeneratingEvent(weaponBuilder, player, HiveItemType.WEAPON));
+		Bukkit.getServer().getPluginManager().callEvent(new HiveItemBuilderGeneratingEvent(chestplateBuilder, player, HiveItemType.CHESTPLATE));
+
 		player.getInventory().setItem(Hive.WEAPON_SLOT, weaponBuilder.build());
 		player.getInventory().setItem(Hive.COLLECTOR_BOTTLE_SLOT, collectorBuilder.build());
 		player.getInventory().setItem(Hive.COMPASS_SLOT, compassBuilder.build());
@@ -536,6 +544,8 @@ public class Hive extends MapGame implements Listener {
 			noHoney.setAmount(1);
 			noHoney.setName(ChatColor.RED + "No honey");
 
+			Bukkit.getServer().getPluginManager().callEvent(new HiveItemBuilderGeneratingEvent(noHoney, player, HiveItemType.NO_HONEY_ICON));
+
 			player.getInventory().setItem(HONEY_SLOT, noHoney.build());
 		} else {
 			int max = getConfig().getMaxHoneyInInventory();
@@ -548,6 +558,9 @@ public class Hive extends MapGame implements Listener {
 			builder.setName(ChatColor.GOLD + "" + amount + " Honey");
 			builder.addLore(ChatColor.GOLD + "Go to your hive and");
 			builder.addLore(ChatColor.GOLD + "right click to deposit");
+
+			Bukkit.getServer().getPluginManager().callEvent(new HiveItemBuilderGeneratingEvent(builder, player, HiveItemType.HONEY_BOTTLE));
+
 			player.getInventory().setItem(Hive.HONEY_SLOT, builder.build());
 		}
 	}
@@ -588,9 +601,21 @@ public class Hive extends MapGame implements Listener {
 
 	@EventHandler(priority = EventPriority.NORMAL)
 	public void onPlayerJoin(PlayerJoinEvent e) {
-		playerData.add(new HivePlayerData(e.getPlayer()));
+		Player player = e.getPlayer();
+
+		playerData.add(new HivePlayerData(player));
 
 		hives.forEach(hive -> hive.updateBossBarPlayers());
+
+		if (hasStarted()) {
+			new BukkitRunnable() {
+				@Override
+				public void run() {
+					player.setAllowFlight(true);
+					player.setFlying(true);
+				}
+			}.runTaskLater(getPlugin(), 3L);
+		}
 	}
 
 	@EventHandler(priority = EventPriority.NORMAL)
